@@ -13,9 +13,6 @@ import (
 	"github.com/hashicorp/hcl/hcl/token"
 )
 
-// This is the tag to use with structures to have settings for HCL
-const tagName = "hcl"
-
 var (
 	// nodeType holds a reference to the type of ast.Node
 	nodeType reflect.Type = findNodeType()
@@ -585,7 +582,7 @@ func (d *decoder) decodeStruct(name string, node ast.Node, result reflect.Value)
 		structType := structVal.Type()
 		for i := 0; i < structType.NumField(); i++ {
 			fieldType := structType.Field(i)
-			tagParts := strings.Split(fieldType.Tag.Get(tagName), ",")
+			tagParts := strings.Split(fieldTag(fieldType), ",")
 
 			// Ignore fields with tag name "-"
 			if tagParts[0] == "-" {
@@ -643,7 +640,7 @@ func (d *decoder) decodeStruct(name string, node ast.Node, result reflect.Value)
 
 		fieldName := field.Name
 
-		tagValue := field.Tag.Get(tagName)
+		tagValue := fieldTag(field)
 		tagParts := strings.SplitN(tagValue, ",", 2)
 		if len(tagParts) >= 2 {
 			switch tagParts[1] {
@@ -726,4 +723,13 @@ func findNodeType() reflect.Type {
 	}
 	value := reflect.ValueOf(nodeContainer).FieldByName("Node")
 	return value.Type()
+}
+
+// read the tag for HCL settings: check `hcl1` first and fallback to `hcl`
+func fieldTag(fieldType reflect.StructField) string {
+	tag := fieldType.Tag.Get("hcl1")
+	if tag == "" {
+		tag = fieldType.Tag.Get("hcl")
+	}
+	return tag
 }
